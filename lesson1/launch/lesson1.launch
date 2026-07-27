@@ -1,6 +1,11 @@
 <launch>
-    <node pkg="autoware_mini_tutorial" name="publisher" type="publisher.py" output="screen" required="true">
-        <param name="message" value="Hello Tartu!" />
+    <node pkg="autoware_mini_tutorial" name="publisher_1" type="publisher.py" output="screen" required="true">
+        <param name="rate" value="0.5" />
+        <param name="message" value="Hello every 2 seconds!" />
+    </node>
+    <node pkg="autoware_mini_tutorial" name="publisher_2" type="publisher.py" output="screen" required="true">
+        <param name="rate" value="0.2" />
+        <param name="message" value="Hello every 5 seconds!" />
     </node>
     <node pkg="autoware_mini_tutorial" name="subscriber" type="subscriber.py" output="screen" required="true"/>
 </launch>
