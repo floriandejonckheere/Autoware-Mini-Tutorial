@@ -11,9 +11,12 @@ class Publisher:
         # Publishers
         self.pub = rospy.Publisher('/message', String, queue_size=10)
 
+        # Parameters
+        self.message = rospy.get_param('~message', 'Hello world!')
+
     def run(self):
         while not rospy.is_shutdown():
-            self.pub.publish("Hello world!")
+            self.pub.publish(self.message)
             self.rate.sleep()
 
 if __name__ == '__main__':
