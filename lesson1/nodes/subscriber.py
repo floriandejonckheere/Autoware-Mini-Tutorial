@@ -3,9 +3,18 @@
 import rospy
 from std_msgs.msg import String
 
-def callback(msg):
-    print(msg.data)
+class Subscriber:
+    def __init__(self):
+        # Subscribers
+        rospy.Subscriber('/message', String, self.message_callback)
 
-rospy.init_node('subscriber')
-rospy.Subscriber("/message", String, callback)
-rospy.spin()
+    def message_callback(self, msg):
+        print(msg.data)
+
+    def run(self):
+        rospy.spin()
+
+if __name__ == '__main__':
+    rospy.init_node('subscriber')
+    node = Subscriber()
+    node.run()
