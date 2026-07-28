@@ -49,7 +49,7 @@ class Localizer:
         ## Calculate orientation
         # Apply azimuth correction
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
-        azimuth = msg.azimuth - azimuth_correction
+        azimuth = math.radians(msg.azimuth - azimuth_correction)
 
         # Convert azimuth (CW from y-axis) to yaw (CCW from x-axis)
         yaw = self.convert_azimuth_to_yaw(azimuth)
