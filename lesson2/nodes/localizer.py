@@ -36,7 +36,7 @@ class Localizer:
         self.br = TransformBroadcaster()
 
     def transform_coordinates(self, msg):
-        # TODO 1: Print latitude and longitude from msg to verify data is received.
+        print(msg.latitude, msg.longitude)
 
         # TODO 2: Transform msg.latitude and msg.longitude to UTM coordinates using
         #         self.transformer, then subtract self.origin_x and self.origin_y.
@@ -63,7 +63,6 @@ class Localizer:
         #         - child_frame_id = "base_link"
         #         - transform.translation from position (x, y, z)
         #         - transform.rotation from orientation quaternion
-        pass
 
     @staticmethod
     def convert_azimuth_to_yaw(azimuth):
