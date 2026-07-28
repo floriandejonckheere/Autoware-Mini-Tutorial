@@ -22,10 +22,10 @@ class Localizer:
         self.crs_wgs84 = CRS.from_epsg(4326)
         self.crs_utm = CRS.from_epsg(25835)
         self.utm_projection = Proj(self.crs_utm)
+        self.transformer = Transformer.from_crs(self.crs_wgs84, self.crs_utm)
+        self.origin_x, self.origin_y = self.transformer.transform(utm_origin_lon, utm_origin_lat)
 
-        # TODO 2: Create a coordinate transformer using self.crs_wgs84 and self.crs_utm.
-        #         Use Transformer.from_crs(). Then transform the origin point (utm_origin_lat,
-        #         utm_origin_lon) and store results as self.origin_x and self.origin_y.
+        print(f"({self.origin_x}.{self.origin_y})")
 
         # Subscribers
         rospy.Subscriber('/novatel/oem7/inspva', INSPVA, self.transform_coordinates)
@@ -36,10 +36,14 @@ class Localizer:
         self.br = TransformBroadcaster()
 
     def transform_coordinates(self, msg):
-        print(msg.latitude, msg.longitude)
+        # Convert to UTM
+        x, y = self.transformer.transform(msg.longitude, msg.latitude)
 
-        # TODO 2: Transform msg.latitude and msg.longitude to UTM coordinates using
-        #         self.transformer, then subtract self.origin_x and self.origin_y.
+        # Subtract origin
+        x -= self.origin_x
+        y -= self.origin_y
+
+        print(f"({msg.latitude},{msg.longitude}) -> ({x},{y})")
 
         # TODO 3: Calculate orientation as a quaternion.
         #         - Get azimuth correction: self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
