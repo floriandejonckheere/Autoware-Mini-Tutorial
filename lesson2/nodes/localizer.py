@@ -44,6 +44,8 @@ class Localizer:
         x -= self.origin_x
         y -= self.origin_y
 
+        z = msg.height - self.undulation
+
         ## Calculate orientation
         # Apply azimuth correction
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
@@ -62,7 +64,7 @@ class Localizer:
 
         current_pose.pose.position.x = x
         current_pose.pose.position.y = y
-        current_pose.pose.position.z = msg.height - self.undulation
+        current_pose.pose.position.z = z
 
         current_pose.pose.orientation = orientation
 
@@ -83,13 +85,24 @@ class Localizer:
         # Publish velocity message
         self.current_velocity_pub.publish(current_velocity)
 
-        print(f"({x},{y}) [{qx},{qy},{qz},{qw}] {velocity}")
+        # Create transform message
+        transform = TransformStamped()
 
-        # TODO 6: Create and publish a TransformStamped message using self.br.sendTransform():
-        #         - header.stamp from msg.header.stamp, frame_id = "map"
-        #         - child_frame_id = "base_link"
-        #         - transform.translation from position (x, y, z)
-        #         - transform.rotation from orientation quaternion
+        transform.header.stamp = msg.header.stamp
+        transform.header.frame_id = "map"
+        transform.child_frame_id = "base_link"
+
+        transform.transform.translation.x = x
+        transform.transform.translation.y = y
+        transform.transform.translation.z = z
+
+        transform.transform.rotation.x = qx
+        transform.transform.rotation.y = qy
+        transform.transform.rotation.z = qz
+        transform.transform.rotation.w = qw
+
+        # Publish transform message
+        self.br.sendTransform(transform)
 
     @staticmethod
     def convert_azimuth_to_yaw(azimuth):
