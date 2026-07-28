@@ -36,6 +36,7 @@ class Localizer:
         self.br = TransformBroadcaster()
 
     def transform_coordinates(self, msg):
+        ## Calculate position
         # Convert to UTM
         x, y = self.transformer.transform(msg.longitude, msg.latitude)
 
@@ -43,23 +44,32 @@ class Localizer:
         x -= self.origin_x
         y -= self.origin_y
 
-        print(f"({msg.latitude},{msg.longitude}) -> ({x},{y})")
+        print(f"({x},{y})")
 
+        ## Calculate orientation
         # Apply azimuth correction
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
         azimuth = msg.azimuth - azimuth_correction
 
         # Convert azimuth (CW from y-axis) to yaw (CCW from x-axis)
         yaw = self.convert_azimuth_to_yaw(azimuth)
-        x, y, z, w = quaternion_from_euler(0, 0, yaw)
+        qx, qy, qz, qw = quaternion_from_euler(0, 0, yaw)
 
-        orientation = Quaternion(x, y, z, w)
+        orientation = Quaternion(qx, qy, qz, qw)
 
-        # TODO 4: Create and publish a PoseStamped message on self.current_pose_pub:
-        #         - header.stamp from msg.header.stamp, frame_id = "map"
-        #         - position.x, position.y from transformed coordinates
-        #         - position.z = msg.height - self.undulation
-        #         - orientation from the quaternion
+        # Create pose message
+        current_pose = PoseStamped()
+        current_pose.header.stamp = msg.header.stamp
+        current_pose.header.frame_id = "map"
+
+        current_pose.pose.position.x = x
+        current_pose.pose.position.y = y
+        current_pose.pose.position.z = msg.height - self.undulation
+
+        current_pose.pose.orientation = orientation
+
+        # Publish pose message
+        self.current_pose_pub.publish(current_pose)
 
         # TODO 5: Calculate velocity as norm of msg.north_velocity and msg.east_velocity.
         #         Create and publish a TwistStamped message on self.current_velocity_pub:
