@@ -45,11 +45,15 @@ class Localizer:
 
         print(f"({msg.latitude},{msg.longitude}) -> ({x},{y})")
 
-        # TODO 3: Calculate orientation as a quaternion.
-        #         - Get azimuth correction: self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
-        #         - Subtract correction from msg.azimuth, convert to radians
-        #         - Use convert_azimuth_to_yaw() to get yaw angle
-        #         - Use quaternion_from_euler(0, 0, yaw) to get quaternion, create Quaternion object
+        # Apply azimuth correction
+        azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
+        azimuth = msg.azimuth - azimuth_correction
+
+        # Convert azimuth (CW from y-axis) to yaw (CCW from x-axis)
+        yaw = self.convert_azimuth_to_yaw(azimuth)
+        x, y, z, w = quaternion_from_euler(0, 0, yaw)
+
+        orientation = Quaternion(x, y, z, w)
 
         # TODO 4: Create and publish a PoseStamped message on self.current_pose_pub:
         #         - header.stamp from msg.header.stamp, frame_id = "map"
