@@ -44,8 +44,6 @@ class Localizer:
         x -= self.origin_x
         y -= self.origin_y
 
-        print(f"({x},{y})")
-
         ## Calculate orientation
         # Apply azimuth correction
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
@@ -71,10 +69,21 @@ class Localizer:
         # Publish pose message
         self.current_pose_pub.publish(current_pose)
 
-        # TODO 5: Calculate velocity as norm of msg.north_velocity and msg.east_velocity.
-        #         Create and publish a TwistStamped message on self.current_velocity_pub:
-        #         - header.stamp from msg.header.stamp, frame_id = "base_link"
-        #         - twist.linear.x = calculated velocity
+        # Calculate velocity
+        velocity = math.sqrt(msg.north_velocity**2 + msg.east_velocity**2)
+
+        # Create velocity message
+        current_velocity = TwistStamped()
+
+        current_velocity.header.stamp = msg.header.stamp
+        current_velocity.header.frame_id = "base_link"
+
+        current_velocity.twist.linear.x = velocity
+
+        # Publish velocity message
+        self.current_velocity_pub.publish(current_velocity)
+
+        print(f"({x},{y}) [{qx},{qy},{qz},{qw}] {velocity}")
 
         # TODO 6: Create and publish a TransformStamped message using self.br.sendTransform():
         #         - header.stamp from msg.header.stamp, frame_id = "map"
