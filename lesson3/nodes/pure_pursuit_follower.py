@@ -38,11 +38,9 @@ class PurePursuitFollower:
             path_linestring = None
             distance_to_velocity_interpolator = None
         else:
-            # TODO 3: Convert waypoints to a shapely LineString and prepare it for spatial queries.
-            #         - Create LineString from waypoint (x, y) coordinates
-            #         - Use prepare() to create a spatial index for efficient queries
-
-            path_linestring = None
+            # Convert waypoints to line string
+            path_linestring = LineString([(w.position.x, w.position.y) for w in msg.waypoints])
+            prepare(path_linestring)
 
             # TODO 5: Create a distance-to-velocity interpolator for the path.
             #         - Collect waypoint (x, y) coordinates into a numpy array
@@ -58,16 +56,16 @@ class PurePursuitFollower:
 
     def current_pose_callback(self, msg):
         if self.path_linestring is None:
-            print(msg.pose.position.x, msg.pose.position.y)
-
             steering_angle = 0.0
             linear_velocity = 0.0
             linear_acceleration = -3.0
         else:
-            # TODO 3: Calculate the ego vehicle's distance from the path start.
-            #         - Convert ego position to a shapely Point
-            #         - Use self.path_linestring.project() to find the distance
-            #         - Remove the TODO 1 printout and print d_ego_from_path_start instead
+            current_pose = Point([msg.pose.position.x, msg.pose.position.y])
+
+            # Distance from path start
+            d_ego_from_path_start = self.path_linestring.project(current_pose)
+
+            print(d_ego_from_path_start)
 
             # TODO 4: Calculate the steering angle using the Pure Pursuit formula.
             #         - Get heading from msg.pose.orientation using euler_from_quaternion
