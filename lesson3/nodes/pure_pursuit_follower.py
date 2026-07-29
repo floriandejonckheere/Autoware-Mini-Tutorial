@@ -17,9 +17,8 @@ class PurePursuitFollower:
     def __init__(self):
 
         # Parameters
-        # TODO 4: Read in parameter values:
-        #         self.lookahead_distance = rospy.get_param("~lookahead_distance")
-        #         self.wheel_base = rospy.get_param("/vehicle/wheel_base")
+        self.lookahead_distance = rospy.get_param("~lookahead_distance")
+        self.wheel_base = rospy.get_param("/vehicle/wheel_base")
 
         # Internal variables
         self.lock = Lock()
@@ -65,16 +64,25 @@ class PurePursuitFollower:
             # Distance from path start
             d_ego_from_path_start = self.path_linestring.project(current_pose)
 
-            print(d_ego_from_path_start)
+            # Get heading from current pose orientation
+            _, _, current_heading = euler_from_quaternion(
+                [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
 
-            # TODO 4: Calculate the steering angle using the Pure Pursuit formula.
-            #         - Get heading from msg.pose.orientation using euler_from_quaternion
-            #         - Calculate the lookahead point using self.path_linestring.interpolate()
-            #         - Calculate the lookahead heading using np.arctan2
-            #         - Calculate the actual lookahead distance using shapely distance()
-            #         - Apply the steering formula
+            # Calculate lookahead point on the path
+            lookahead_point = self.path_linestring.interpolate(d_ego_from_path_start + self.lookahead_distance)
 
-            steering_angle = 0.0
+            # Calculate lookahead heading
+            lookahead_heading = np.arctan2(lookahead_point.y - msg.pose.position.y,
+                                           lookahead_point.x - msg.pose.position.x)
+
+            # Recalculate the actual lookahead distance (direct distance between points)
+            ld = distance(current_pose, lookahead_point)
+
+            # Calculate steering angle using the Pure Pursuit formula
+            heading_difference = lookahead_heading - current_heading
+            curvature = 2 * np.sin(heading_difference) / ld
+            steering_angle = np.arctan(self.wheel_base * curvature)
+
             linear_velocity = 0.0
             linear_acceleration = 0.0
 
@@ -88,7 +96,8 @@ class PurePursuitFollower:
         vehicle_cmd = VehicleCommand()
         vehicle_cmd.header.stamp = msg.header.stamp
         vehicle_cmd.header.frame_id = "base_link"
-        vehicle_cmd.steering_angle = 0.2
+
+        vehicle_cmd.steering_angle = steering_angle
         vehicle_cmd.speed = 10
         vehicle_cmd.acceleration = 0
 
