@@ -27,8 +27,7 @@ class PurePursuitFollower:
         self.distance_to_velocity_interpolator = None
 
         # Publishers
-        # TODO 2: Create a publisher for '/control/vehicle_cmd' topic with VehicleCommand message type.
-        #         self.vehicle_cmd_pub = rospy.Publisher(...)
+        self.vehicle_cmd_pub = rospy.Publisher('/control/vehicle_cmd', VehicleCommand, queue_size=10)
 
         # Subscribers
         rospy.Subscriber('path', Path, self.path_callback, queue_size=1)
@@ -87,7 +86,16 @@ class PurePursuitFollower:
             #         Since the interpolator is now used here, add a check for
             #         self.distance_to_velocity_interpolator is None to the if statement above.
 
-        # TODO 2: Create and publish a VehicleCommand message with constant steering angle and velocity for testing.
+        # Create vehicle command message
+        vehicle_cmd = VehicleCommand()
+        vehicle_cmd.header.stamp = msg.header.stamp
+        vehicle_cmd.header.frame_id = "base_link"
+        vehicle_cmd.steering_angle = 0.2
+        vehicle_cmd.speed = 10
+        vehicle_cmd.acceleration = 0
+
+        # Publish vehicle command message
+        self.vehicle_cmd_pub.publish(vehicle_cmd)
 
     def run(self):
         rospy.spin()
