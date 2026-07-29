@@ -41,20 +41,27 @@ class PurePursuitFollower:
             path_linestring = LineString([(w.position.x, w.position.y) for w in msg.waypoints])
             prepare(path_linestring)
 
-            # TODO 5: Create a distance-to-velocity interpolator for the path.
-            #         - Collect waypoint (x, y) coordinates into a numpy array
-            #         - Calculate cumulative distances between waypoints
-            #         - Extract velocity values from waypoints
-            #         - Create an interp1d interpolator (bounds_error=False, fill_value=0.0)
+            # Collect waypoint x and y coordinates
+            waypoints_xy = np.array([(w.position.x, w.position.y) for w in msg.waypoints])
 
-            distance_to_velocity_interpolator = None
+            # Calculate cumulative distances between points
+            distances = np.cumsum(np.sqrt(np.sum(np.diff(waypoints_xy, axis=0) ** 2, axis=1)))
+
+            # Add 0 distance in the beginning
+            distances = np.insert(distances, 0, 0)
+
+            # Extract velocity values at waypoints
+            velocities = np.array([w.speed for w in msg.waypoints])
+
+            # Create interpolator
+            distance_to_velocity_interpolator = interp1d(distances, velocities, kind='linear')
 
         with self.lock:
             self.path_linestring = path_linestring
             self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
 
     def current_pose_callback(self, msg):
-        if self.path_linestring is None:
+        if self.path_linestring is None or self.distance_to_velocity_interpolator is None:
             steering_angle = 0.0
             linear_velocity = 0.0
             linear_acceleration = -3.0
@@ -83,14 +90,8 @@ class PurePursuitFollower:
             curvature = 2 * np.sin(heading_difference) / ld
             steering_angle = np.arctan(self.wheel_base * curvature)
 
-            linear_velocity = 0.0
+            linear_velocity = float(self.distance_to_velocity_interpolator(d_ego_from_path_start))
             linear_acceleration = 0.0
-
-            # TODO 5: Use the distance-to-velocity interpolator to get the velocity
-            #         at the ego vehicle's position on the path. Replace the constant
-            #         linear_velocity with the interpolated value.
-            #         Since the interpolator is now used here, add a check for
-            #         self.distance_to_velocity_interpolator is None to the if statement above.
 
         # Create vehicle command message
         vehicle_cmd = VehicleCommand()
@@ -98,8 +99,8 @@ class PurePursuitFollower:
         vehicle_cmd.header.frame_id = "base_link"
 
         vehicle_cmd.steering_angle = steering_angle
-        vehicle_cmd.speed = 10
-        vehicle_cmd.acceleration = 0
+        vehicle_cmd.speed = linear_velocity
+        vehicle_cmd.acceleration = linear_acceleration
 
         # Publish vehicle command message
         self.vehicle_cmd_pub.publish(vehicle_cmd)
