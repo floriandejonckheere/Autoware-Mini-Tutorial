@@ -12,6 +12,7 @@ from shapely.geometry import LineString, Point
 from shapely import prepare, distance
 from scipy.interpolate import interp1d
 
+
 class PurePursuitFollower:
     def __init__(self):
 
@@ -58,8 +59,7 @@ class PurePursuitFollower:
 
     def current_pose_callback(self, msg):
         if self.path_linestring is None:
-            # TODO 1: Print out the current pose coordinates to verify data flow.
-            #         print(msg.pose.position.x, msg.pose.position.y)
+            print(msg.pose.position.x, msg.pose.position.y)
 
             steering_angle = 0.0
             linear_velocity = 0.0
