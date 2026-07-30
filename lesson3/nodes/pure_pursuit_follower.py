@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from math import isnan
 
 import numpy as np
 import rospy
@@ -51,18 +50,11 @@ class PurePursuitFollower:
             # Add 0 distance in the beginning
             distances = np.insert(distances, 0, 0)
 
-            # Remove last distance, so the interpolator will go out of bounds
-            distances = np.delete(distances, -1)
-
             # Extract velocity values at waypoints
             velocities = np.array([w.speed for w in msg.waypoints])
 
-            # Remove last velocity, so the interpolator will go out of bounds
-            velocities = np.delete(velocities, -1)
-
-            # Create interpolator (extrapolate velocity to 5 before path, and nan after path)
-            distance_to_velocity_interpolator = interp1d(distances, velocities, kind='linear', bounds_error=False,
-                                                         fill_value=(5, np.nan))
+            # Create interpolator
+            distance_to_velocity_interpolator = interp1d(distances, velocities, kind='linear')
 
         with self.lock:
             self.path_linestring = path_linestring
@@ -98,15 +90,8 @@ class PurePursuitFollower:
             curvature = 2 * np.sin(heading_difference) / ld
             steering_angle = np.arctan(self.wheel_base * curvature)
 
-            # Calculate velocity and acceleration
             linear_velocity = float(self.distance_to_velocity_interpolator(d_ego_from_path_start))
             linear_acceleration = 0.0
-
-            # Interpolator returns nan if the vehicle has reached the end of the path
-            if isnan(linear_velocity):
-                linear_acceleration = -3.0
-                linear_velocity = 0.0
-                steering_angle = 0.0
 
         # Create vehicle command message
         vehicle_cmd = VehicleCommand()
