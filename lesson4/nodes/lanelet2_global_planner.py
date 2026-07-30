@@ -98,10 +98,17 @@ class GlobalPlanner:
         if self.goal_point is None:
             return
 
-        # TODO 4: Check if the vehicle has reached the goal.
-        #         - Calculate the distance between self.current_location and self.goal_point
-        #         - If within self.distance_to_goal_limit, publish an empty path,
-        #           log that the goal was reached, and set self.goal_point to None
+        # Calculate distance to goal point
+        d_ego_from_goal = np.sqrt((self.current_location.x - self.goal_point.x) ** 2 +
+                                  (self.current_location.y - self.goal_point.y) ** 2)
+
+        if d_ego_from_goal < self.distance_to_goal_limit:
+            # Publish empty waypoints list
+            self.publish_lane_from_waypoints_list([])
+            self.goal_point = None
+
+            rospy.loginfo("%s - goal position (%f, %f, %f) reached", rospy.get_name(),
+                          msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
 
     def convert_laneletseq_to_waypoints_list(self, laneletseq):
         waypoints = []
