@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import numpy as np
+import math
 import rospy
 from threading import Lock
 
@@ -100,8 +100,8 @@ class GlobalPlanner:
             return
 
         # Calculate distance to goal point
-        d_ego_from_goal = np.sqrt((self.current_location.x - self.goal_point.x) ** 2 +
-                                  (self.current_location.y - self.goal_point.y) ** 2)
+        d_ego_from_goal = math.dist((self.current_location.x, self.current_location.y),
+                                    (self.goal_point.x, self.goal_point.y))
 
         if d_ego_from_goal < self.distance_to_goal_limit:
             # Publish empty waypoints list
