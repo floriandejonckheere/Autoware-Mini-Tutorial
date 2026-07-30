@@ -12,6 +12,7 @@ from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from lanelet2.core import BasicPoint2d
 from lanelet2.geometry import findNearest
+from shapely.geometry import LineString, Point
 
 
 class GlobalPlanner:
@@ -135,9 +136,31 @@ class GlobalPlanner:
 
                 waypoints.append(waypoint)
 
-        # TODO 5: Sync path end with goal point.
-        #         The path end and goal point may not align because findNearest()
-        #         returns a full lanelet. Find your own solution — see README for ideas.
+        # Sync path end with goal point
+        if len(waypoints) > 0:
+            # Create a LineString from waypoints
+            path_linestring = LineString([(w.position.x, w.position.y) for w in waypoints])
+
+            # Project goal point onto path
+            projected_goal_point = Point([self.goal_point.x, self.goal_point.y])
+            d_goal_from_path_start = path_linestring.project(projected_goal_point)
+
+            # Interpolate the exact point on the path at that distance
+            interpolated_goal_point = path_linestring.interpolate(d_goal_from_path_start)
+
+            # Create new waypoint at interpolated position
+            new_waypoint = Waypoint()
+            new_waypoint.position.x = interpolated_goal_point.x
+            new_waypoint.position.y = interpolated_goal_point.y
+            new_waypoint.position.z = waypoints[-1].position.z
+            new_waypoint.speed = waypoints[-1].speed
+
+            # Replace last waypoint with the new one
+            waypoints[-1] = new_waypoint
+
+            # Update self.goal_point to the interpolated coordinates
+            with self.lock:
+                self.goal_point = BasicPoint2d(interpolated_goal_point.x, interpolated_goal_point.y)
 
         return waypoints
 
