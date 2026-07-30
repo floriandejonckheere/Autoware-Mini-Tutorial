@@ -84,11 +84,12 @@ class GlobalPlanner:
 
         # Get path without lane changes
         path_no_lane_change = path.getRemainingLane(start_lanelet)
-        print(path_no_lane_change)
 
-        # TODO 3: Convert the route to waypoints and publish.
-        #         - Call self.convert_laneletseq_to_waypoints_list() with the result
-        #         - Call self.publish_lane_from_waypoints_list() with the waypoints
+        # Convert path to waypoints
+        waypoints = self.convert_laneletseq_to_waypoints_list(path_no_lane_change)
+
+        # Publish waypoints
+        self.publish_lane_from_waypoints_list(waypoints)
 
     def current_pose_callback(self, msg):
         with self.lock:
@@ -105,12 +106,27 @@ class GlobalPlanner:
     def convert_laneletseq_to_waypoints_list(self, laneletseq):
         waypoints = []
 
-        # TODO 3: Convert the lanelet sequence to a list of Waypoint messages.
-        #         - Iterate through lanelets in laneletseq
-        #         - For each lanelet, get speed from 'speed_ref' attribute (km/h → m/s)
-        #           or use self.speed_limit / 3.6; speed should not exceed speed_limit
-        #         - Iterate through lanelet.centerline points
-        #         - Create Waypoint with position (x, y, z) and speed
+        for j, lanelet in enumerate(laneletseq):
+            # Get speed from lanelet attribute, or default to global speed limit
+            speed_km_h = lanelet.attributes['speed_limit'] or self.speed_limit
+
+            # Convert from km/h to m/s
+            speed = min(float(speed_km_h), self.speed_limit) / 3.6
+
+            # Iterate through the centerline points and create waypoints
+            for i, point in enumerate(lanelet.centerline):
+                # Skip first point of every lanelet except the very first (endpoints overlap)
+                if i == 0 and j != 0:
+                    continue
+
+                waypoint = Waypoint()
+
+                waypoint.position.x = point.x
+                waypoint.position.y = point.y
+                waypoint.position.z = point.z
+                waypoint.speed = speed
+
+                waypoints.append(waypoint)
 
         # TODO 5: Sync path end with goal point.
         #         The path end and goal point may not align because findNearest()
