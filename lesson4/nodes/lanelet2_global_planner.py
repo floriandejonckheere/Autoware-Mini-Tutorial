@@ -116,7 +116,7 @@ class GlobalPlanner:
 
         for j, lanelet in enumerate(laneletseq):
             # Get speed from lanelet attribute, or default to global speed limit
-            speed_km_h = lanelet.attributes['speed_limit'] or self.speed_limit
+            speed_km_h = lanelet.attributes['speed_ref'] if 'speed_ref' in lanelet.attributes else self.speed_limit
 
             # Convert from km/h to m/s
             speed = min(float(speed_km_h), self.speed_limit) / 3.6
