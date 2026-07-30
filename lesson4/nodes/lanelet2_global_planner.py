@@ -35,7 +35,11 @@ class GlobalPlanner:
             raise RuntimeError('Only "utm" is supported for lanelet2 map loading')
         self.lanelet2_map = load(lanelet2_map_path, projector)
 
-        # TODO 2: Create traffic rules and routing graph.
+        # Load traffic rules and routing graph
+        traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,
+                                                      lanelet2.traffic_rules.Participants.VehicleTaxi)
+
+        self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
 
         # Internal variables
         self.lock = Lock()
@@ -60,11 +64,27 @@ class GlobalPlanner:
                       msg.pose.position.x, msg.pose.position.y, msg.pose.position.z,
                       msg.header.frame_id)
 
-        # TODO 2: Find the route from current location to goal.
-        #         - Use findNearest() to get the closest lanelet to self.current_location and self.goal_point
-        #         - Use self.graph.getRoute() to find a route (check for None and logwarn)
-        #         - Get the shortestPath() from the route (check for None and logwarn)
-        #         - Get getRemainingLane(start_lanelet) for a path without lane changes
+        # Find current lanelet
+        start_lanelet = findNearest(self.lanelet2_map.laneletLayer, self.current_location, 1)[0][1]
+        goal_lanelet = findNearest(self.lanelet2_map.laneletLayer, self.goal_point, 1)[0][1]
+
+        # Find route from start to goal lanelet (no lane changes)
+        route = self.graph.getRoute(start_lanelet, goal_lanelet, 0, False)
+
+        if route is None:
+            rospy.logwarn("%s - No route found to goal position", rospy.get_name())
+            return
+
+        # Find shortest path from start to goal lanelet
+        path = route.shortestPath()
+
+        if path is None:
+            rospy.logwarn("%s - No path found to goal position", rospy.get_name())
+            return
+
+        # Get path without lane changes
+        path_no_lane_change = path.getRemainingLane(start_lanelet)
+        print(path_no_lane_change)
 
         # TODO 3: Convert the route to waypoints and publish.
         #         - Call self.convert_laneletseq_to_waypoints_list() with the result
