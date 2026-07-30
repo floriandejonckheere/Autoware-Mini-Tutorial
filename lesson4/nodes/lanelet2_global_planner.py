@@ -16,7 +16,6 @@ from lanelet2.geometry import findNearest
 
 class GlobalPlanner:
     def __init__(self):
-
         # Parameters
         lanelet2_map_path = rospy.get_param("~lanelet2_map_path")
         self.speed_limit = float(rospy.get_param("~speed_limit"))
@@ -57,8 +56,9 @@ class GlobalPlanner:
         if self.current_location is None:
             return
 
-        # TODO 1: Log the received goal position coordinates.
-        #         Use rospy.loginfo to print the node name and goal coordinates.
+        rospy.loginfo("%s - goal position (%f, %f, %f) in %s frame", rospy.get_name(),
+                      msg.pose.position.x, msg.pose.position.y, msg.pose.position.z,
+                      msg.header.frame_id)
 
         # TODO 2: Find the route from current location to goal.
         #         - Use findNearest() to get the closest lanelet to self.current_location and self.goal_point
