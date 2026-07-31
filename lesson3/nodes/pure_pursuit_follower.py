@@ -61,7 +61,12 @@ class PurePursuitFollower:
             self.distance_to_velocity_interpolator = distance_to_velocity_interpolator
 
     def current_pose_callback(self, msg):
-        if self.path_linestring is None or self.distance_to_velocity_interpolator is None:
+        # Reference internal variables locally to prevent race condition between the two callbacks
+        with self.lock:
+            path_linestring = self.path_linestring
+            distance_to_velocity_interpolator = self.distance_to_velocity_interpolator
+
+        if path_linestring is None or distance_to_velocity_interpolator is None:
             steering_angle = 0.0
             linear_velocity = 0.0
             linear_acceleration = -3.0
@@ -69,14 +74,14 @@ class PurePursuitFollower:
             current_pose = Point([msg.pose.position.x, msg.pose.position.y])
 
             # Distance from path start
-            d_ego_from_path_start = self.path_linestring.project(current_pose)
+            d_ego_from_path_start = path_linestring.project(current_pose)
 
             # Get heading from current pose orientation
             _, _, current_heading = euler_from_quaternion(
                 [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
 
             # Calculate lookahead point on the path
-            lookahead_point = self.path_linestring.interpolate(d_ego_from_path_start + self.lookahead_distance)
+            lookahead_point = path_linestring.interpolate(d_ego_from_path_start + self.lookahead_distance)
 
             # Calculate lookahead heading
             lookahead_heading = np.arctan2(lookahead_point.y - msg.pose.position.y,
@@ -90,7 +95,7 @@ class PurePursuitFollower:
             curvature = 2 * np.sin(heading_difference) / ld
             steering_angle = np.arctan(self.wheel_base * curvature)
 
-            linear_velocity = float(self.distance_to_velocity_interpolator(d_ego_from_path_start))
+            linear_velocity = float(distance_to_velocity_interpolator(d_ego_from_path_start))
             linear_acceleration = 0.0
 
         # Create vehicle command message
