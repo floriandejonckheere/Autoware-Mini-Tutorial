@@ -137,7 +137,7 @@ class GlobalPlanner:
                 waypoints.append(waypoint)
 
         # Sync path end with goal point
-        if len(waypoints) > 0:
+        if len(waypoints) > 1:
             # Create a LineString from waypoints
             path_linestring = LineString([(w.position.x, w.position.y) for w in waypoints])
 
@@ -155,8 +155,19 @@ class GlobalPlanner:
             new_waypoint.position.z = waypoints[-1].position.z
             new_waypoint.speed = waypoints[-1].speed
 
-            # Replace last waypoint with the new one
-            waypoints[-1] = new_waypoint
+            # Replace path with waypoints before the new goal point + new goal point
+            new_waypoints = []
+
+            for w in waypoints:
+                point = Point([w.position.x, w.position.y])
+
+                if path_linestring.project(point) < d_goal_from_path_start:
+                    new_waypoints.append(w)
+
+            # Append new goal point and replace path
+            new_waypoints.append(new_waypoint)
+
+            waypoints = new_waypoints
 
             # Update self.goal_point to the interpolated coordinates
             with self.lock:
