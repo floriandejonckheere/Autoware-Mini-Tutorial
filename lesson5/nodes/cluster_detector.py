@@ -4,6 +4,7 @@ import rospy
 import numpy as np
 
 from shapely import MultiPoint
+from shapely.geometry import Polygon
 from tf2_ros import TransformListener, Buffer, TransformException
 from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
@@ -11,7 +12,7 @@ from ros_numpy import numpify
 from sensor_msgs.msg import PointCloud2
 from autoware_mini.msg import DetectedObjectArray, DetectedObject
 from std_msgs.msg import ColorRGBA
-
+from geometry_msgs.msg import Point32
 
 BLUE80P = ColorRGBA(0.0, 0.0, 1.0, 0.8)
 
@@ -31,7 +32,8 @@ class ClusterDetector:
         self.objects_pub = rospy.Publisher('detected_objects', DetectedObjectArray, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('points_clustered', PointCloud2, self.cluster_callback, queue_size=1, buff_size=2**24, tcp_nodelay=True)
+        rospy.Subscriber('points_clustered', PointCloud2, self.cluster_callback, queue_size=1, buff_size=2 ** 24,
+                         tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -53,18 +55,18 @@ class ClusterDetector:
             points_copy = points_copy.dot(tf_matrix.T)
             points[:, :3] = points_copy[:, :3]
 
-        # TODO 3: Create a DetectedObjectArray and iterate over cluster labels.
-        #         - Create DetectedObjectArray with header (stamp from msg, frame_id from self.output_frame)
-        #         - Loop over cluster labels and assign correct points to each cluster
-        #         - Skip clusters with fewer points than self.min_cluster_size
+        detected_object_array = DetectedObjectArray()
 
-            # TODO 4: Calculate centroid and convex hull for each cluster.
-            #         - Centroid: mean of x, y, z coordinates
-            #         - Convex hull: use MultiPoint(points3d[:, :2]).convex_hull,
-            #           skip clusters whose hull is not a Polygon (line or point)
-            #         - Create a DetectedObject and set: id, label, color, centroid,
-            #           convex_hull, valid, and reliability flags
-            #         - Append to the DetectedObjectArray and publish after the loop
+        detected_object_array.header.stamp = msg.header.stamp
+        detected_object_array.header.frame_id = self.output_frame
+
+        for i in range(int(max(points[:, 3]) + 1)):
+            # Find all points with a correct label
+            points3d = points[points[:, 3] == i]
+
+            # Skip small clusters (fewer points than min_cluster_size)
+            if len(points3d) < self.min_cluster_size:
+                continue
 
     def run(self):
         rospy.spin()
