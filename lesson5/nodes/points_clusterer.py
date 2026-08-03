@@ -15,7 +15,8 @@ class PointsClusterer:
         self.cluster_epsilon = rospy.get_param('~cluster_epsilon')
         self.cluster_min_samples = rospy.get_param('~cluster_min_samples')
 
-        # TODO 1: Create self.clusterer using DBSCAN with the parameters above.
+        # Internal variables
+        self.clusterer = DBSCAN(eps=self.cluster_epsilon, min_samples=self.cluster_min_samples)
 
         # Publishers
         self.clustered_pub = rospy.Publisher('points_clustered', PointCloud2, queue_size=1, tcp_nodelay=True)
@@ -26,13 +27,14 @@ class PointsClusterer:
         rospy.loginfo("%s - initialized", rospy.get_name())
 
     def points_callback(self, msg):
+        # Convert message to numpy format and cluster points
+        data = numpify(msg)
+        points = structured_to_unstructured(data[['x', 'y', 'z']], dtype=np.float32)
 
-        # TODO 1: Extract points from the message and cluster them.
-        #         - Use numpify(msg) to convert the PointCloud2 message to a numpy array
-        #         - Use structured_to_unstructured()
-        #           to get an (N, 3) array of point coordinates
-        #         - Run self.clusterer.fit_predict(points) to get cluster labels
-        #         - Skip empty point clouds (0 points) - DBSCAN cannot cluster them
+        if points.size == 0:
+            return
+
+        labels = self.clusterer.fit_predict(points)
 
         # TODO 2: Publish the clustered points as a PointCloud2 message.
         #         - Concatenate points with labels (as a new column)
