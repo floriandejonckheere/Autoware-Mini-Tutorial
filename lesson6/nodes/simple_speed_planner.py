@@ -97,10 +97,6 @@ class SimpleSpeedPlanner:
                                                for heading, (vx, vy, vz) in zip(collision_point_path_headings,
                                                                                 collision_points[['vx', 'vy', 'vz']])])
 
-            for i, object in enumerate(collision_points):
-                print(
-                    f'object speed: {np.linalg.norm([object["vx"], object["vy"], object["vz"]]):.2f} m/s, projected speed: {collision_point_speeds[i]:.2f} m/s')
-
             # Account for braking reaction time in target distances
             target_distances -= self.braking_reaction_time * np.abs(collision_point_speeds)
 
