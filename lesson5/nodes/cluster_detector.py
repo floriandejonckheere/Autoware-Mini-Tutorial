@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
-import rospy
 import numpy as np
-
-from shapely import MultiPoint
-from shapely.geometry import Polygon
-from tf2_ros import TransformListener, Buffer, TransformException
+import rospy
+from geometry_msgs.msg import Point32
 from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
-
 from sensor_msgs.msg import PointCloud2
-from autoware_mini.msg import DetectedObjectArray, DetectedObject
+from shapely import MultiPoint
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Point32
+from tf2_ros import TransformListener, Buffer, TransformException
+
+from autoware_mini.msg import DetectedObjectArray, DetectedObject
 
 BLUE80P = ColorRGBA(0.0, 0.0, 1.0, 0.8)
 

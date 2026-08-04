@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import rospy
 import numpy as np
+import rospy
 from numpy.lib.recfunctions import structured_to_unstructured, unstructured_to_structured
-from sklearn.cluster import DBSCAN
-
 from ros_numpy import numpify, msgify
 from sensor_msgs.msg import PointCloud2
+from sklearn.cluster import DBSCAN
 
 
 class PointsClusterer:
