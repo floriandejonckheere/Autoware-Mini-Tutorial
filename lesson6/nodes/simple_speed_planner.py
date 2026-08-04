@@ -103,11 +103,16 @@ class SimpleSpeedPlanner:
             collision_point_category = collision_points[np.argmin(calculated_target_velocities)]["category"]
             stopping_point_distance = stopping_point_distances[np.argmin(calculated_target_velocities)]
 
-            # TODO 4: Calculate collision point speed.
-            #         - For each collision point, get the path heading at that distance
-            #           using get_heading_at_distance()
-            #         - Project the collision point velocity onto the heading using
-            #           project_vector_to_heading()
+            # Calculate collision point speeds
+            collision_point_path_headings = [self.get_heading_at_distance(local_path_linestring, d) for d in
+                                             collision_point_distances]
+            collision_point_speeds = np.array([self.project_vector_to_heading(heading, Vector3(vx, vy, vz))
+                                               for heading, (vx, vy, vz) in zip(collision_point_path_headings,
+                                                                                collision_points[['vx', 'vy', 'vz']])])
+
+            for i, object in enumerate(collision_points):
+                print(
+                    f'object speed: {np.linalg.norm([object["vx"], object["vy"], object["vz"]]):.2f} m/s, projected speed: {collision_point_speeds[i]:.2f} m/s')
 
             # TODO 6: Modify target velocity with reaction time.
             #         - Subtract braking_reaction_time * abs(collision_point_speeds)

@@ -97,8 +97,9 @@ class SimpleCollisionChecker:
 
                     for x, y in intersection_points:
                         collision_points = np.append(collision_points,
-                                                     np.array([(x, y, 0.0, 0.0, 0.0, 0.0,
-                                                                self.braking_safety_distance_obstacle, np.inf, 4)],
+                                                     np.array([(x, y, 0.0, obj.velocity.x, obj.velocity.y,
+                                                                obj.velocity.z, self.braking_safety_distance_obstacle,
+                                                                np.inf, 4)],
                                                               dtype=DTYPE))
 
         # TODO 7: Add goal point as collision point.
