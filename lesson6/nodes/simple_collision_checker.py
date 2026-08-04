@@ -102,10 +102,14 @@ class SimpleCollisionChecker:
                                                                 np.inf, 4)],
                                                               dtype=DTYPE))
 
-        # TODO 7: Add goal point as collision point.
-        #         - Check if goal_point is within the buffered local path
-        #         - If so, append it as a collision point with category=1, zero velocity,
-        #           distance_to_stop=braking_safety_distance_goal
+        # Add goal point as collision point
+        if goal_point is not None:
+            goal_point_shapely = shapely.Point(goal_point.x, goal_point.y)
+
+            if local_path_buffer.intersects(goal_point_shapely.buffer(0.1)):
+                collision_points = np.append(collision_points, np.array(
+                    [(goal_point.x, goal_point.y, 0.0, 0.0, 0.0, 0.0, self.braking_safety_distance_goal, np.inf, 1
+                      )], dtype=DTYPE))
 
         # TODO 9 (lesson 7): add stop line collision points for red traffic lights
 
