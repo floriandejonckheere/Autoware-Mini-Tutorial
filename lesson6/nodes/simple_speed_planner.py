@@ -101,9 +101,8 @@ class SimpleSpeedPlanner:
                 print(
                     f'object speed: {np.linalg.norm([object["vx"], object["vy"], object["vz"]]):.2f} m/s, projected speed: {collision_point_speeds[i]:.2f} m/s')
 
-            # TODO 6: Modify target velocity with reaction time.
-            #         - Subtract braking_reaction_time * abs(collision_point_speeds)
-            #           from target distances
+            # Account for braking reaction time in target distances
+            target_distances -= self.braking_reaction_time * np.abs(collision_point_speeds)
 
             # Account for collision point speed in target velocity
             approaching_speeds = np.minimum(collision_point_speeds, 0)
