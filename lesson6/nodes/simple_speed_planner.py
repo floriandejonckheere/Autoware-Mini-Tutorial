@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
-import rospy
 import math
-import message_filters
-import traceback
-import shapely
-import numpy as np
 import threading
+import traceback
+
+import message_filters
+import numpy as np
+import rospy
+import shapely
+from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
 from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
-from autoware_mini.msg import Path, LocalPath
 from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import PoseStamped, TwistStamped, Vector3
+
+from autoware_mini.msg import Path, LocalPath
 
 
 class SimpleSpeedPlanner:
@@ -37,13 +39,17 @@ class SimpleSpeedPlanner:
         self.visualized_path_pub = rospy.Publisher('visualized_path', LocalPath, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
-        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1, tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_pose', PoseStamped, self.current_pose_callback, queue_size=1,
+                         tcp_nodelay=True)
+        rospy.Subscriber('/localization/current_velocity', TwistStamped, self.current_velocity_callback, queue_size=1,
+                         tcp_nodelay=True)
 
         collision_points_sub = message_filters.Subscriber('collision_points', PointCloud2, tcp_nodelay=True)
         local_path_sub = message_filters.Subscriber('extracted_local_path', Path, tcp_nodelay=True)
 
-        ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub], queue_size=synchronization_queue_size, slop=synchronization_slop)
+        ts = message_filters.ApproximateTimeSynchronizer([collision_points_sub, local_path_sub],
+                                                         queue_size=synchronization_queue_size,
+                                                         slop=synchronization_slop)
         ts.registerCallback(self.collision_points_and_path_callback)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
@@ -71,18 +77,25 @@ class SimpleSpeedPlanner:
                 return
 
             # Create local path linestring
-            local_path_xyz = np.array([(wp.position.x, wp.position.y, wp.position.z) for wp in local_path_msg.waypoints])
+            local_path_xyz = np.array(
+                [(wp.position.x, wp.position.y, wp.position.z) for wp in local_path_msg.waypoints])
             local_path_linestring = shapely.LineString(local_path_xyz)
 
             # Project collision points onto the local path to get distances
             collision_points_shapely = shapely.points(structured_to_unstructured(collision_points[['x', 'y', 'z']]))
             collision_point_distances = np.array([local_path_linestring.project(cp) for cp in collision_points_shapely])
 
-            # TODO 2: Calculate target velocity and modify the local path waypoint speeds.
-            #         - Calculate target velocity for each collision point using:
-            #           v = sqrt(2 * default_deceleration * distance)
-            #         - Find the minimum target velocity
-            #         - Overwrite waypoint speeds: wp.speed = min(target_velocity, wp.speed)
+            # Calculate target velocities
+            calculated_target_velocities = np.sqrt(2 * self.default_deceleration * collision_point_distances)
+            target_velocity = np.min(calculated_target_velocities)
+
+            # Overwrite waypoint speeds
+            for wp in local_path_msg.waypoints:
+                wp.speed = min(target_velocity, wp.speed)
+
+            # Calculate metadata
+            target_object_distance = collision_point_distances[np.argmin(calculated_target_velocities)]
+            collision_point_category = collision_points[np.argmin(calculated_target_velocities)]["category"]
 
             # TODO 3: Add braking safety distance.
             #         - Subtract distance_to_car_front from collision_point_distances
@@ -105,11 +118,18 @@ class SimpleSpeedPlanner:
             #         - Find the collision point with the minimum target velocity (not just closest)
             #         - Set target_object_speed from the collision point speeds
 
-            # Publishing the modified local path goes below all the TODOs.
-            # In TODO 2, create the modified Path message here and pass it to
-            # self.publish_local_path() together with the calculated metadata;
-            # the later TODOs only refine these values.
+            # Create and publish path message
+            path = Path()
 
+            path.header = local_path_msg.header
+            path.waypoints = local_path_msg.waypoints
+
+            self.publish_local_path(path,
+                                    target_object_distance=target_object_distance,
+                                    target_object_speed=0,
+                                    stopping_point_distance=target_object_distance,
+                                    collision_point_category=collision_point_category,
+                                    is_blocked=True)
         except Exception as e:
             rospy.logerr_throttle(10, "%s - Exception in callback: %s", rospy.get_name(), traceback.format_exc())
 
