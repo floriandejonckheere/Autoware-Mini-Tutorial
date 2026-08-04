@@ -93,7 +93,7 @@ class SimpleCollisionChecker:
                     # Calculate the intersection geometry and create a collision point from each
                     # of its coordinates, filling in the rest of the DTYPE fields from the object
                     # metadata.
-                    intersection_points = shapely.intersection(local_path_buffer, polygon).exterior.coords
+                    intersection_points = shapely.get_coordinates(shapely.intersection(local_path_buffer, polygon))
 
                     for x, y in intersection_points:
                         collision_points = np.append(collision_points,
