@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 
+import threading
+
+import numpy as np
 import rospy
 import shapely
-import math
-import numpy as np
-import threading
 from ros_numpy import msgify
-from autoware_mini.msg import Path, DetectedObjectArray
 from sensor_msgs.msg import PointCloud2
+
+from autoware_mini.msg import Path, DetectedObjectArray
 
 # Collision point categories: 0 = none, 1 = goal, 2 = traffic light, 3 = static obstacle, 4 = moving obstacle
 DTYPE = np.dtype([
-    ('x', np.float32),          # position
+    ('x', np.float32),  # position
     ('y', np.float32),
     ('z', np.float32),
-    ('vx', np.float32),         # velocity
+    ('vx', np.float32),  # velocity
     ('vy', np.float32),
     ('vz', np.float32),
-    ('distance_to_stop', np.float32),   # safety distance before collision point
-    ('deceleration_limit', np.float32), # max allowed deceleration (np.inf = no limit)
+    ('distance_to_stop', np.float32),  # safety distance before collision point
+    ('deceleration_limit', np.float32),  # max allowed deceleration (np.inf = no limit)
     ('category', np.int32)
 ])
 
@@ -48,7 +49,8 @@ class SimpleCollisionChecker:
 
         # Subscribers
         rospy.Subscriber('extracted_local_path', Path, self.path_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/detection/final_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
+        rospy.Subscriber('/detection/final_objects', DetectedObjectArray, self.detected_objects_callback, queue_size=1,
+                         buff_size=2 ** 20, tcp_nodelay=True)
         rospy.Subscriber('global_path', Path, self.global_path_callback, queue_size=None, tcp_nodelay=True)
         # TODO 8 (lesson 7): add traffic_light_status subscriber
 
@@ -76,12 +78,27 @@ class SimpleCollisionChecker:
             self.collision_points_pub.publish(collision_points_msg)
             return
 
-        # TODO 1: Create obstacle collision points.
-        #         - Create a Shapely LineString from the local path waypoints
-        #         - Buffer it with safety_box_width / 2 (cap_style="flat")
-        #         - If detected_objects is not None and not empty, iterate over them
-        #           and add collision points from their intersections with the buffered path
-        #           to the collision_points array
+        # Create obstacle collision points
+        local_path_linestring = shapely.LineString([(w.position.x, w.position.y) for w in msg.waypoints])
+        local_path_buffer = local_path_linestring.buffer(self.safety_box_width / 2, cap_style="flat")
+        shapely.prepare(local_path_buffer)
+
+        if detected_objects is not None and len(detected_objects) > 0:
+            for obj in detected_objects:
+                polygon = shapely.Polygon(
+                    [(obj.convex_hull[i], obj.convex_hull[i + 1]) for i in range(0, len(obj.convex_hull), 3)])
+                shapely.prepare(polygon)
+
+                if local_path_buffer.intersects(polygon):
+                    # Calculate the intersection geometry and create a collision point from each
+                    # of its coordinates, filling in the rest of the DTYPE fields from the object
+                    # metadata.
+                    intersection_points = shapely.intersection(local_path_buffer, polygon).exterior.coords
+
+                    for x, y in intersection_points:
+                        collision_points = np.append(collision_points,
+                                                     np.array([(x, y, 0.0, 0.0, 0.0, 0.0, 0.0, np.inf, 4)],
+                                                              dtype=DTYPE))
 
         # TODO 7: Add goal point as collision point.
         #         - Check if goal_point is within the buffered local path
