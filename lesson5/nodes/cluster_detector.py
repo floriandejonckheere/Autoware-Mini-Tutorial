@@ -2,7 +2,6 @@
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import Point32
 from numpy.lib.recfunctions import structured_to_unstructured
 from ros_numpy import numpify
 from sensor_msgs.msg import PointCloud2
