@@ -87,7 +87,6 @@ class SimpleCollisionChecker:
             for obj in detected_objects:
                 polygon = shapely.Polygon(
                     [(obj.convex_hull[i], obj.convex_hull[i + 1]) for i in range(0, len(obj.convex_hull), 3)])
-                shapely.prepare(polygon)
 
                 if local_path_buffer.intersects(polygon):
                     # Calculate the intersection geometry and create a collision point from each
