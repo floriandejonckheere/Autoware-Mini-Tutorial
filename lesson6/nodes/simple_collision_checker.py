@@ -96,10 +96,14 @@ class SimpleCollisionChecker:
                     intersection_points = shapely.get_coordinates(shapely.intersection(local_path_buffer, polygon))
 
                     for x, y in intersection_points:
+                        # Calculate speed derive category
+                        speed = np.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2 + obj.velocity.z ** 2)
+                        category = 3 if speed <= self.stopped_speed_limit else 4
+
                         collision_points = np.append(collision_points,
                                                      np.array([(x, y, 0.0, obj.velocity.x, obj.velocity.y,
                                                                 obj.velocity.z, self.braking_safety_distance_obstacle,
-                                                                np.inf, 4)],
+                                                                np.inf, category)],
                                                               dtype=DTYPE))
 
         # Add goal point as collision point
