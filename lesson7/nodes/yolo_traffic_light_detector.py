@@ -127,7 +127,7 @@ class YoloTrafficLightDetector:
         # used in calculate_roi_coordinates to filter out only relevant traffic lights
         stop_line_ids_on_path = []
 
-        if len(local_path_msg.waypoints) > 0:
+        if local_path_msg.waypoints:
             # Create a LineString from waypoints
             path_linestring = LineString([(w.position.x, w.position.y) for w in local_path_msg.waypoints])
             shapely.prepare(path_linestring)
@@ -184,7 +184,10 @@ class YoloTrafficLightDetector:
             except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
+
             map_rois = self.calculate_roi_coordinates(stop_line_ids_on_path, transform)
+
+            print(f'map_rois: {map_rois}')
 
             if map_rois:
                 # TODO 4: Run the YOLO model on the image to get yolo_rois, classes and scores,
@@ -206,10 +209,15 @@ class YoloTrafficLightDetector:
                 for x, y, z in traffic_light_coords:
                     point_map = Point(x=x, y=y, z=z)
 
-                    # TODO 3: Transform point_map to the camera frame (point_camera),
-                    #         project it to pixel coordinates (u, v) using the camera model
-                    #         and break out of the loop if the point is outside the image
-                    #         or behind the camera.
+                    # Transform point_map to camera frame
+                    point_camera = do_transform_point(PointStamped(point=point_map), transform).point
+
+                    # Project to pixel coordinates
+                    u, v = self.camera_model.project3dToPixel((point_camera.x, point_camera.y, point_camera.z))
+
+                    # Stop projecting if corners once one falls outside of the image or behind the camera
+                    if u < 0 or u >= self.camera_model.width or v < 0 or v >= self.camera_model.height or point_camera.z < 0:
+                        break
 
                     # convert the extent in meters to extent in pixels
                     extent_x_px = self.camera_model.fx() * self.roi_width_extent / point_camera.z
