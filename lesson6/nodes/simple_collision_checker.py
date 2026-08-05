@@ -88,6 +88,10 @@ class SimpleCollisionChecker:
                 polygon = shapely.Polygon(
                     [(obj.convex_hull[i], obj.convex_hull[i + 1]) for i in range(0, len(obj.convex_hull), 3)])
 
+                # Calculate speed derive category
+                speed = np.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2 + obj.velocity.z ** 2)
+                category = 3 if speed <= self.stopped_speed_limit else 4
+
                 if local_path_buffer.intersects(polygon):
                     # Calculate the intersection geometry and create a collision point from each
                     # of its coordinates, filling in the rest of the DTYPE fields from the object
@@ -95,10 +99,6 @@ class SimpleCollisionChecker:
                     intersection_points = shapely.get_coordinates(shapely.intersection(local_path_buffer, polygon))
 
                     for x, y in intersection_points:
-                        # Calculate speed derive category
-                        speed = np.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2 + obj.velocity.z ** 2)
-                        category = 3 if speed <= self.stopped_speed_limit else 4
-
                         collision_points = np.append(collision_points,
                                                      np.array([(x, y, obj.centroid.z, obj.velocity.x, obj.velocity.y,
                                                                 obj.velocity.z, self.braking_safety_distance_obstacle,
