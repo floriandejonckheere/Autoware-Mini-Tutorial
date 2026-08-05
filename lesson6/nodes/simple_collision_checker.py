@@ -10,7 +10,7 @@ from lanelet2.projection import UtmProjector
 from ros_numpy import msgify
 from sensor_msgs.msg import PointCloud2
 
-from autoware_mini.msg import Path, DetectedObjectArray, StopLineStatusArray
+from autoware_mini.msg import Path, DetectedObjectArray, StopLineStatus, StopLineStatusArray
 
 # Collision point categories: 0 = none, 1 = goal, 2 = traffic light, 3 = static obstacle, 4 = moving obstacle
 DTYPE = np.dtype([
@@ -88,6 +88,7 @@ class SimpleCollisionChecker:
         with self.lock:
             detected_objects = self.detected_objects
             goal_point = self.goal_point
+            stopline_statuses = self.stopline_statuses
 
         collision_points = np.array([], dtype=DTYPE)
 
@@ -133,7 +134,19 @@ class SimpleCollisionChecker:
                       np.inf, 1
                       )], dtype=DTYPE))
 
-        # TODO 9 (lesson 7): add stop line collision points for red traffic lights
+        # Add stop line collision points for red traffic lights
+        for stop_line_id, status in stopline_statuses.items():
+            if status != StopLineStatus.STATUS_STOP:
+                continue
+
+            stop_line = self.stop_lines[stop_line_id]
+
+            if local_path_linestring.intersects(stop_line):
+                x, y = shapely.get_coordinates(shapely.intersection(local_path_linestring, stop_line))[0]
+
+                collision_points = np.append(collision_points, np.array(
+                    [(x, y, 0.0, 0.0, 0.0, 0.0, self.braking_safety_distance_stopline, np.inf, 2
+                      )], dtype=DTYPE))
 
         # Publish the collision points (an empty array means no collision points on the path)
         if len(collision_points) > 0:
