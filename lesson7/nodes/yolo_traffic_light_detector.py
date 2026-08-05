@@ -16,6 +16,7 @@ from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
+from shapely import LineString
 from tf2_geometry_msgs import do_transform_point
 
 from autoware_mini.msg import Path, StopLineStatus, StopLineStatusArray
@@ -123,13 +124,20 @@ class YoloTrafficLightDetector:
             self.camera_model = camera_model
 
     def local_path_callback(self, local_path_msg):
-
         # used in calculate_roi_coordinates to filter out only relevant traffic lights
         stop_line_ids_on_path = []
 
-        # TODO 1: If the local path has waypoints, create a shapely LineString from them
-        #         and collect the ids of the stop lines that intersect with it
-        #         into stop_line_ids_on_path.
+        if len(local_path_msg.waypoints) > 0:
+            # Create a LineString from waypoints
+            path_linestring = LineString([(w.position.x, w.position.y) for w in local_path_msg.waypoints])
+            shapely.prepare(path_linestring)
+
+            for stop_line_id, stop_line in self.stop_lines.items():
+                # Check if the stop line intersects with the path
+                if path_linestring.intersects(stop_line):
+                    stop_line_ids_on_path.append(stop_line_id)
+
+            print(f'stop_line_ids_on_path: {stop_line_ids_on_path}')
 
         with self.lock:
             self.stop_line_ids_on_path = stop_line_ids_on_path
