@@ -106,12 +106,12 @@ class SimpleSpeedPlanner:
             calculated_target_velocities = np.maximum(0, approaching_speeds + v)
 
             # Calculate target velocities and update metadata
-            collision_point = np.argmin(calculated_target_velocities)
+            collision_point_idx = np.argmin(calculated_target_velocities)
 
-            target_object_distance = collision_point_braking_distances[collision_point]
-            target_object_speed = collision_point_speeds[collision_point]
-            collision_point_category = collision_points[collision_point]["category"]
-            stopping_point_distance = stopping_point_distances[collision_point]
+            target_object_distance = collision_point_braking_distances[collision_point_idx]
+            target_object_speed = collision_point_speeds[collision_point_idx]
+            collision_point_category = collision_points[collision_point_idx]["category"]
+            stopping_point_distance = stopping_point_distances[collision_point_idx]
             target_velocity = np.min(calculated_target_velocities)
 
             # Overwrite waypoint speeds
