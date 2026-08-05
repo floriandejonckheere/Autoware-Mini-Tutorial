@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
 
-import rospy
-import numpy as np
-import cv2
-import shapely
 import threading
-import tf2_ros
-import onnxruntime
 
-import image_geometry
+import cv2
 import cv_bridge
-
+import image_geometry
+import numpy as np
+import onnxruntime
+import rospy
+import shapely
+import tf2_ros
+from autoware_mini.yolo import Yolo11Model
+from geometry_msgs.msg import Point, PointStamped
 from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
+from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import Image
 from tf2_geometry_msgs import do_transform_point
 
-from geometry_msgs.msg import Point, PointStamped
-from sensor_msgs.msg import Image
-from sensor_msgs.msg import CameraInfo
 from autoware_mini.msg import Path, StopLineStatus, StopLineStatusArray
-from autoware_mini.yolo import Yolo11Model
 
 # Force plain CUDA execution instead of TensorRT to avoid engine building delays and deployment issues
 _InferenceSession = onnxruntime.InferenceSession
-onnxruntime.InferenceSession = lambda model_path, **kwargs: _InferenceSession(model_path, providers=['CUDAExecutionProvider'])
+onnxruntime.InferenceSession = lambda model_path, **kwargs: _InferenceSession(model_path,
+                                                                              providers=['CUDAExecutionProvider'])
 
 # The main traffic light classes of the YOLO model. The model can also detect
 # arrow-specific variants (classes 4-12, e.g. green-left) - those are discarded.
@@ -49,9 +49,9 @@ CLASS_TO_LIGHT_COLOR = {
 }
 
 CLASS_TO_TLRESULT = {
-    0: StopLineStatus.STATUS_GO,      # GREEN
-    1: StopLineStatus.STATUS_STOP,    # YELLOW
-    2: StopLineStatus.STATUS_STOP,    # RED
+    0: StopLineStatus.STATUS_GO,  # GREEN
+    1: StopLineStatus.STATUS_STOP,  # YELLOW
+    2: StopLineStatus.STATUS_STOP,  # RED
     3: StopLineStatus.STATUS_UNKNOWN  # UNKNOWN
 }
 
@@ -103,13 +103,16 @@ class YoloTrafficLightDetector:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Publishers
-        self.tfl_status_pub = rospy.Publisher('traffic_light_status', StopLineStatusArray, queue_size=1, tcp_nodelay=True)
+        self.tfl_status_pub = rospy.Publisher('traffic_light_status', StopLineStatusArray, queue_size=1,
+                                              tcp_nodelay=True)
         self.tfl_roi_pub = rospy.Publisher('traffic_light_roi', Image, queue_size=1, tcp_nodelay=True)
 
         # Subscribers
         rospy.Subscriber('camera_info', CameraInfo, self.camera_info_callback, queue_size=1, tcp_nodelay=True)
-        rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1, buff_size=2**20, tcp_nodelay=True)
-        rospy.Subscriber('image_raw', Image, self.camera_image_callback, queue_size=1, buff_size=2**26, tcp_nodelay=True)
+        rospy.Subscriber('/planning/local_path', Path, self.local_path_callback, queue_size=1, buff_size=2 ** 20,
+                         tcp_nodelay=True)
+        rospy.Subscriber('image_raw', Image, self.camera_image_callback, queue_size=1, buff_size=2 ** 26,
+                         tcp_nodelay=True)
 
         rospy.loginfo("%s - initialized", rospy.get_name())
 
@@ -315,7 +318,8 @@ class YoloTrafficLightDetector:
         intersection_y2 = np.minimum(boxes1[:, 3][:, np.newaxis], boxes2[:, 3])
 
         # Calculate the area of the intersection bounding boxes
-        intersection_area = np.maximum(intersection_x2 - intersection_x1, 0) * np.maximum(intersection_y2 - intersection_y1, 0)
+        intersection_area = np.maximum(intersection_x2 - intersection_x1, 0) * np.maximum(
+            intersection_y2 - intersection_y1, 0)
 
         # Calculate the union of the bounding boxes
         union_area = area1[:, np.newaxis] + area2 - intersection_area
