@@ -137,8 +137,6 @@ class YoloTrafficLightDetector:
                 if path_linestring.intersects(stop_line):
                     stop_line_ids_on_path.append(stop_line_id)
 
-            print(f'stop_line_ids_on_path: {stop_line_ids_on_path}')
-
         with self.lock:
             self.stop_line_ids_on_path = stop_line_ids_on_path
             self.transform_from_frame = local_path_msg.header.frame_id
@@ -186,8 +184,6 @@ class YoloTrafficLightDetector:
                 return
 
             map_rois = self.calculate_roi_coordinates(stop_line_ids_on_path, transform)
-
-            print(f'map_rois: {map_rois}')
 
             if map_rois:
                 # Run YOLO model on the image
