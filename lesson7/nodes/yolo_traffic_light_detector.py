@@ -16,7 +16,6 @@ from lanelet2.io import Origin, load
 from lanelet2.projection import UtmProjector
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
-from shapely import LineString
 from tf2_geometry_msgs import do_transform_point
 
 from autoware_mini.msg import Path, StopLineStatus, StopLineStatusArray
@@ -129,7 +128,7 @@ class YoloTrafficLightDetector:
 
         if local_path_msg.waypoints:
             # Create a LineString from waypoints
-            path_linestring = LineString([(w.position.x, w.position.y) for w in local_path_msg.waypoints])
+            path_linestring = shapely.LineString([(w.position.x, w.position.y) for w in local_path_msg.waypoints])
             shapely.prepare(path_linestring)
 
             for stop_line_id, stop_line in self.stop_lines.items():
@@ -257,7 +256,7 @@ class YoloTrafficLightDetector:
         # for every map roi
         for stop_line_id, traffic_light_id, x1_map, x2_map, y1_map, y2_map in map_rois:
             matched_roi = None
-            max_score = 0.0
+            max_iou_score = 0.0
 
             for idx, (cls, score, yolo_roi) in enumerate(zip(yolo_classes, yolo_scores, yolo_rois)):
                 iou_score = \
@@ -268,9 +267,9 @@ class YoloTrafficLightDetector:
                     continue
 
                 # Keep detection with highest score
-                if iou_score > max_score:
+                if iou_score > max_iou_score:
                     matched_roi = [cls, score, yolo_roi, idx]
-                    max_score = iou_score
+                    max_iou_score = iou_score
 
             tfl_result = StopLineStatus()
             tfl_result.traffic_light_id = traffic_light_id
