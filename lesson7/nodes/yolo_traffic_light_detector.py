@@ -177,9 +177,14 @@ class YoloTrafficLightDetector:
             self.camera_model.rectifyImage(image, image)
 
         if stop_line_ids_on_path:
-
-            # TODO 2: Extract the transform between transform_to_frame and transform_from_frame
-            #         at image_time_stamp using self.tf_buffer, then calculate the map ROIs:
+            try:
+                transform = self.tf_buffer.lookup_transform(transform_to_frame, transform_from_frame,
+                                                            image_time_stamp,
+                                                            rospy.Duration(self.transform_timeout))
+            except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
+                rospy.logwarn("%s - %s", rospy.get_name(), e)
+                return
+            map_rois = self.calculate_roi_coordinates(stop_line_ids_on_path, transform)
 
             if map_rois:
                 # TODO 4: Run the YOLO model on the image to get yolo_rois, classes and scores,
