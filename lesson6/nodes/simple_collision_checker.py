@@ -85,8 +85,7 @@ class SimpleCollisionChecker:
 
         if detected_objects is not None and len(detected_objects) > 0:
             for obj in detected_objects:
-                polygon = shapely.Polygon(
-                    [(obj.convex_hull[i], obj.convex_hull[i + 1]) for i in range(0, len(obj.convex_hull), 3)])
+                polygon = shapely.Polygon(np.array(obj.convex_hull).reshape(-1, 3)[:, :2])
 
                 # Calculate speed derive category
                 speed = np.sqrt(obj.velocity.x ** 2 + obj.velocity.y ** 2 + obj.velocity.z ** 2)
