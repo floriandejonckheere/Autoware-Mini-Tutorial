@@ -80,4 +80,10 @@ Another potential fix could be to integrate emergency vehicle detection into the
 ...
 
 ##### Failure case 3
-...
+
+Right after the car starts turning onto the intersection, the pedestrian on the sidewalk jaywalks across the road, in front of the ego vehicle. The ego vehicle fails to stop and runs over the pedestrian.
+The issue is that the ego vehicle does not expect pedestrians to cross the road outside of the designated areas, and does not adjust its speed accordingly. Although the predicted path of the pedestrian crosses the local path when the pedestrian enters the driving lane, the speed vector is not big enough to start breaking early, and the ego vehicle cannot avoid the collision.
+
+A potential solution could be to keep better track of pedestrians on the sidewalk, if their predicted path is not parallel to the driving lane (e.g. they are standing still, or moving towards the driving lane).
+
+[failure_case_3.webm](../shared/data/scenarios/failure_case_3.webm)
