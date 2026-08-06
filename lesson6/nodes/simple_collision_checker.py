@@ -135,11 +135,11 @@ class SimpleCollisionChecker:
                       )], dtype=DTYPE))
 
         # Add stop line collision points for red traffic lights
-        for stop_line_id, status in stopline_statuses.items():
+        for stop_line_id, stop_line in self.stop_lines.items():
+            status = stopline_statuses.get(stop_line_id)
+
             if status != StopLineStatus.STATUS_STOP:
                 continue
-
-            stop_line = self.stop_lines[stop_line_id]
 
             if local_path_linestring.intersects(stop_line):
                 x, y = shapely.get_coordinates(shapely.intersection(local_path_linestring, stop_line))[0]
