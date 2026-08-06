@@ -77,7 +77,12 @@ Another potential fix could be to integrate emergency vehicle detection into the
 [failure_case_1.webm](../shared/data/scenarios/failure_case_1.webm)
 
 ##### Failure case 2
-...
+
+A car is coming from the right, and drives into the turning lane, with the intention of turning into the parking of Delta campus. The ego vehicle does detect the oncoming car, and even uses part of the (opposing) turning lane to turn right onto the road.
+
+The calculated (local) path of the ego vehicle crosses the opposing turning lane, and the ego vehicle takes a turn that is too wide. The local planner should always respect the lane boundaries, and ensure there is enough space (including buffer space) in case of other vehicles.
+
+[failure_case_2.webm](../shared/data/scenarios/failure_case_2.webm)
 
 ##### Failure case 3
 
