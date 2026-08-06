@@ -69,6 +69,8 @@ Your framework from the previous lessons is a simplified one. Remember all limit
 
 When the ego vehicle starts the drive, it first stops to yield at the first intersection (exiting the parking lot). After stopping, it starts to drive onto the intersection to merge into the driving lane. A police car is then approaching from the left at high speed, and the ego vehicle fails to stop and yield for the emergency vehicle, which then crashes into the ego vehicle.
 
+![failure_case_1.png](../shared/data/scenarios/failure_case_1.png)
+
 The problem is that the ego vehicle does not know that the emergency vehicle is approaching from the left, since it is driving at high speed. A potential fix could be to modify the merging behavior so it is more conservative, and tracks oncoming vehicles with higher accuracy.
 Another potential fix could be to integrate emergency vehicle detection into the autonomous driving software, but this would require a much deeper implementation and potentially additional sensors, such as microphone arrays.
 
